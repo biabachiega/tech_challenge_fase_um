@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Polly;
+using System.ComponentModel.DataAnnotations;
 using TechChallengeFaseUm.Entities;
 using TechChallengeFaseUm.Repositories;
 
@@ -19,77 +21,181 @@ namespace TechChallengeFaseUm.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateContact([FromBody] ContatosRequest contatos)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ApiResponse<ContatosResponse>
+                {
+                    Message = "O estado do modelo não é válido",
+                    HasError = true,
+                    Data = null
+                });
+            }
+
             try
             {
-                var guidId = Guid.NewGuid();
-                contatos.id = guidId.ToString();
-                // Adicione a entidade ao contexto e salve as mudanças
-                _dbContext.Set<ContatosRequest>().Add(contatos);
-                await _dbContext.SaveChangesAsync();
+                var retryPolicy = Policy.Handle<Exception>()
+                                        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
 
-                return Ok("Dados inseridos com sucesso!");
+                var novoContato = new ContatosResponse
+                {
+                    id = Guid.NewGuid().ToString(),
+                    name = contatos.name,
+                    email = contatos.email,
+                    telefone = contatos.telefone
+                };
+
+                await retryPolicy.ExecuteAsync(async () =>
+                {
+                    _dbContext.Set<ContatosResponse>().Add(novoContato);
+                    await _dbContext.SaveChangesAsync();
+                });
+
+                return Ok(new ApiResponse<ContatosResponse>
+                {
+                    Message = "Dados inseridos com sucesso!",
+                    HasError = false,
+                    Data = novoContato
+                });
             }
             catch (Exception ex)
             {
-                return BadRequest($"Erro ao inserir dados: {ex.Message}");
+                return BadRequest(new ApiResponse<ContatosResponse>
+                {
+                    Message = $"Erro ao inserir dados: {ex.Message}",
+                    HasError = true,
+                    Data = null
+                });
             }
         }
 
-
-
         [HttpGet("getAll")]
-        public async Task<ActionResult<IEnumerable<ContatosRequest>>> GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            return await _dbContext.contatos.ToListAsync();
-
+            try
+            {
+                var contacts = await _dbContext.contatos.ToListAsync();
+                return Ok(new ApiResponse<IEnumerable<ContatosResponse>>
+                {
+                    Message = "Contatos recuperado com sucesso",
+                    HasError = false,
+                    Data = contacts
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponse<IEnumerable<ContatosResponse>>
+                {
+                    Message = $"Erro ao recuperar contatos: {ex.Message}",
+                    HasError = true,
+                    Data = null
+                });
+            }
         }
 
-
         [HttpGet("getByDDD/{ddd}")]
-        public async Task<ActionResult<IEnumerable<ContatosRequest>>> GetByDDD(int ddd)
+        public async Task<IActionResult> GetByDDD(int ddd)
         {
-            var filteredContacts = await _dbContext.contatos
-                .Where(c => c.telefone.StartsWith(ddd.ToString())) // Filtra os telefones que começam com "11"
-                .ToListAsync();
+            try
+            {
+                var filteredContacts = await _dbContext.contatos
+                    .Where(c => c.telefone.StartsWith($"({ddd})"))
+                    .ToListAsync();
 
-            return filteredContacts;
-
+                return Ok(new ApiResponse<IEnumerable<ContatosResponse>>
+                {
+                    Message = "Contatos filtrados recuperados com sucesso",
+                    HasError = false,
+                    Data = filteredContacts
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponse<IEnumerable<ContatosResponse>>
+                {
+                    Message = $"Erro ao recuperar contatos filtrados: {ex.Message}",
+                    HasError = true,
+                    Data = null
+                });
+            }
         }
 
         [HttpDelete("deleteById/{id}")]
-        public async Task<ActionResult<IEnumerable<ContatosRequest>>> DeleteResourceById(string id)
+        public IActionResult DeleteResourceById(string id)
         {
-            var entityToDelete = _dbContext.contatos.FirstOrDefault(c => c.id == id);
-            if (entityToDelete != null)
+            try
             {
-                _dbContext.contatos.Remove(entityToDelete);
-                _dbContext.SaveChanges();
-                return Ok($"Contato com ID {id} excluído com sucesso!");
+                var entityToDelete = _dbContext.contatos.FirstOrDefault(c => c.id == id);
+                if (entityToDelete != null)
+                {
+                    _dbContext.contatos.Remove(entityToDelete);
+                    _dbContext.SaveChanges();
+
+                    return Ok(new ApiResponse<ContatosResponse>
+                    {
+                        Message = $"Contato com ID {id} excluído com sucesso!",
+                        HasError = false,
+                        Data = entityToDelete
+                    });
+                }
+                else
+                {
+                    return NotFound(new ApiResponse<ContatosResponse>
+                    {
+                        Message = $"Contato com ID {id} não encontrado.",
+                        HasError = true,
+                        Data = null
+                    });
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return NotFound($"Contato com ID {id} não encontrado.");
+                return BadRequest(new ApiResponse<ContatosResponse>
+                {
+                    Message = $"Erro ao excluir contato: {ex.Message}",
+                    HasError = true,
+                    Data = null
+                });
             }
         }
-
 
         [HttpPut("updateById/{id}")]
         public IActionResult UpdateResource(string id, [FromBody] ContatosRequest updatedResource)
         {
-            var existingResource = _dbContext.contatos.FirstOrDefault(c => c.id == id);
-            if (existingResource == null)
-                return NotFound($"Recurso com ID {id} não encontrado.");
+            try
+            {
+                var existingResource = _dbContext.contatos.FirstOrDefault(c => c.id == id);
+                if (existingResource == null)
+                {
+                    return NotFound(new ApiResponse<ContatosResponse>
+                    {
+                        Message = $"Recurso com ID {id} não encontrado.",
+                        HasError = true,
+                        Data = null
+                    });
+                }
 
-            // Atualize apenas os campos desejados
-            existingResource.name = updatedResource.name;
-            existingResource.telefone = updatedResource.telefone;
-            existingResource.email = updatedResource.email;
+                existingResource.name = updatedResource.name ?? existingResource.name;
+                existingResource.telefone = updatedResource.telefone ?? existingResource.telefone;
+                existingResource.email = updatedResource.email ?? existingResource.email;
 
-            _dbContext.SaveChanges();
+                _dbContext.SaveChanges();
 
-            return Ok($"Contato com ID {id} atualizado com sucesso!");
+                return Ok(new ApiResponse<ContatosResponse>
+                {
+                    Message = $"Contato com ID {id} atualizado com sucesso!",
+                    HasError = false,
+                    Data = existingResource
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponse<ContatosResponse>
+                {
+                    Message = $"Erro ao atualizar contato: {ex.Message}",
+                    HasError = true,
+                    Data = null
+                });
+            }
         }
-
-
     }
 }

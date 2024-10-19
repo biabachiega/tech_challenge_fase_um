@@ -15,7 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<DbContextRepository>(options =>
-    options.UseNpgsql("Host=172.17.0.3;Port=5432;Database=postgres;User Id=postgres;Password=1234"));
+    options.UseNpgsql("Host=172.17.0.2;Port=5432;Database=postgres;User Id=postgres;Password=1234"));
 
 var app = builder.Build();
 
