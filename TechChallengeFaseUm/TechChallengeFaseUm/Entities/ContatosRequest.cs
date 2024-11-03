@@ -6,10 +6,10 @@ namespace TechChallengeFaseUm.Entities
     public class ContatosRequest
     {
         [Required(ErrorMessage = "Nome é obrigatório.")]
-        public string name { get; set; }
+        public string nome { get; set; }
 
         [Required(ErrorMessage = "Email é obrigatório.")]
-        [EmailAddress(ErrorMessage = "Email em formato inválido.")]
+        [EmailAddress(ErrorMessage = "Email em formato inválido. Exemplo: email@exemple.com")]
         public string email { get; set; }
 
         [Required(ErrorMessage = "Telefone é obrigatório.")]

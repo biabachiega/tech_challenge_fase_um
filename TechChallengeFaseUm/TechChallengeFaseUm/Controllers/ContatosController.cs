@@ -23,8 +23,7 @@ namespace TechChallengeFaseUm.Controllers
                 return BadRequest(new ApiResponse<ContatosResponse>
                 {
                     Message = "O estado do modelo não é válido",
-                    HasError = true,
-                    Data = null
+                    HasError = true
                 });
             }
 
@@ -33,7 +32,7 @@ namespace TechChallengeFaseUm.Controllers
                 var novoContato = new ContatosResponse
                 {
                     id = Guid.NewGuid().ToString(),
-                    name = contatos.name,
+                    nome = contatos.nome,
                     email = contatos.email,
                     telefone = contatos.telefone
                 };
@@ -53,8 +52,7 @@ namespace TechChallengeFaseUm.Controllers
                 return BadRequest(new ApiResponse<ContatosResponse>
                 {
                     Message = $"Erro ao inserir dados: {ex.Message}",
-                    HasError = true,
-                    Data = null
+                    HasError = true
                 });
             }
         }
@@ -67,7 +65,7 @@ namespace TechChallengeFaseUm.Controllers
                 var contacts = await _dbContext.contatos.ToListAsync();
                 return Ok(new ApiResponse<IEnumerable<ContatosResponse>>
                 {
-                    Message = "Contatos recuperado com sucesso",
+                    Message = "Contatos obtidos com sucesso",
                     HasError = false,
                     Data = contacts
                 });
@@ -76,7 +74,7 @@ namespace TechChallengeFaseUm.Controllers
             {
                 return BadRequest(new ApiResponse<IEnumerable<ContatosResponse>>
                 {
-                    Message = $"Erro ao recuperar contatos: {ex.Message}",
+                    Message = $"Erro ao obter contatos: {ex.Message}",
                     HasError = true,
                     Data = null
                 });
@@ -94,7 +92,7 @@ namespace TechChallengeFaseUm.Controllers
 
                 return Ok(new ApiResponse<IEnumerable<ContatosResponse>>
                 {
-                    Message = "Contatos filtrados recuperados com sucesso",
+                    Message = "Contatos filtrados obtidos com sucesso",
                     HasError = false,
                     Data = filteredContacts
                 });
@@ -103,9 +101,8 @@ namespace TechChallengeFaseUm.Controllers
             {
                 return BadRequest(new ApiResponse<IEnumerable<ContatosResponse>>
                 {
-                    Message = $"Erro ao recuperar contatos filtrados: {ex.Message}",
-                    HasError = true,
-                    Data = null
+                    Message = $"Erro ao obter contatos filtrados: {ex.Message}",
+                    HasError = true
                 });
             }
         }
@@ -123,7 +120,7 @@ namespace TechChallengeFaseUm.Controllers
 
                     return Ok(new ApiResponse<ContatosResponse>
                     {
-                        Message = $"Contato com ID {id} excluído com sucesso!",
+                        Message = $"Contato com Id {id} excluído com sucesso!",
                         HasError = false,
                         Data = entityToDelete
                     });
@@ -132,9 +129,8 @@ namespace TechChallengeFaseUm.Controllers
                 {
                     return NotFound(new ApiResponse<ContatosResponse>
                     {
-                        Message = $"Contato com ID {id} não encontrado.",
-                        HasError = true,
-                        Data = null
+                        Message = $"Contato com Id {id} não encontrado.",
+                        HasError = true
                     });
                 }
             }
@@ -143,8 +139,7 @@ namespace TechChallengeFaseUm.Controllers
                 return BadRequest(new ApiResponse<ContatosResponse>
                 {
                     Message = $"Erro ao excluir contato: {ex.Message}",
-                    HasError = true,
-                    Data = null
+                    HasError = true
                 });
             }
         }
@@ -154,17 +149,26 @@ namespace TechChallengeFaseUm.Controllers
         {
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new ApiResponse<ContatosResponse>
+                    {
+                        HasError = true,
+                        Message = "Dados inválidos fornecidos."
+                    });
+                }
+
                 var existingResource = _dbContext.contatos.FirstOrDefault(c => c.id == id);
                 if (existingResource == null)
                 {
                     return NotFound(new ApiResponse<ContatosResponse>
                     {
-                        Message = $"Recurso com ID {id} não encontrado.",
+                        Message = $"Contato com Id {id} não encontrado.",
                         HasError = true
                     });
                 }
 
-                existingResource.name = updatedResource.name ?? existingResource.name;
+                existingResource.nome = updatedResource.nome ?? existingResource.nome;
                 existingResource.telefone = updatedResource.telefone ?? existingResource.telefone;
                 existingResource.email = updatedResource.email ?? existingResource.email;
 
@@ -172,7 +176,7 @@ namespace TechChallengeFaseUm.Controllers
 
                 return Ok(new ApiResponse<ContatosResponse>
                 {
-                    Message = $"Contato com ID {id} atualizado com sucesso!",
+                    Message = $"Contato com Id {id} atualizado com sucesso!",
                     HasError = false,
                     Data = existingResource
                 });
@@ -182,8 +186,7 @@ namespace TechChallengeFaseUm.Controllers
                 return BadRequest(new ApiResponse<ContatosResponse>
                 {
                     Message = $"Erro ao atualizar contato: {ex.Message}",
-                    HasError = true,
-                    Data = null
+                    HasError = true
                 });
             }
         }
