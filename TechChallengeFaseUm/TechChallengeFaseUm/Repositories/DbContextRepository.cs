@@ -2,10 +2,10 @@
 using TechChallengeFaseUm.Entities;
 
 public class DbContextRepository : DbContext
+{
+    public DbContextRepository(DbContextOptions<DbContextRepository> options) : base(options)
     {
-        public DbContextRepository(DbContextOptions<DbContextRepository> options) : base(options)
-        {
-        }
-
-        public DbSet<ContatosResponse> contatos { get; set; }
     }
+
+    public DbSet<ContatosResponse> contatos { get; set; }
+}

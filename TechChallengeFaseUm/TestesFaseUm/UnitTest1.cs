@@ -93,8 +93,8 @@ public class ContatosControllerTests
 
         var contatos = new List<ContatosResponse>
         {
-            new ContatosResponse { id = "e8837348-64d2-4602-bf86-8744dce4ec65", nome = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" },
-            new ContatosResponse { id = "b8f105bd-3546-4b05-bc13-ecedce4a3f8e", nome = "Artemis Crock", email = "Artemis.crock@example.com", telefone = "(21) 98765-4321" }
+            new ContatosResponse { id = new Guid("e8837348-64d2-4602-bf86-8744dce4ec65"), nome = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" },
+            new ContatosResponse { id = new Guid("b8f105bd-3546-4b05-bc13-ecedce4a3f8e"), nome = "Artemis Crock", email = "Artemis.crock@example.com", telefone = "(21) 98765-4321" }
         };
 
         _context.contatos.AddRange(contatos);
@@ -115,16 +115,37 @@ public class ContatosControllerTests
     }
 
     [Fact]
+    public async Task GetById_ReturnsContato_WhenContatoExists()
+    {
+        var contatoId = Guid.NewGuid();
+        var contato = new ContatosResponse { id = contatoId, nome = "Bruce Wayne", email = "bruce.wayne@wayneenterprises.com", telefone = "(11) 98765-4321" };
+        _context.contatos.Add(contato);
+        await _context.SaveChangesAsync();
+
+        var result = await _controller.GetById(contatoId) as OkObjectResult;
+        Assert.NotNull(result);
+
+        var returnedValue = result.Value as ApiResponse<ContatosResponse>;
+        Assert.NotNull(returnedValue);
+        Assert.Equal("Contatos filtrados obtidos com sucesso", returnedValue.Message);
+        Assert.False(returnedValue.HasError);
+
+        var returnedContato = returnedValue.Data;
+        Assert.NotNull(returnedContato);
+        Assert.Equal(contatoId, returnedContato.id);
+    }
+
+    [Fact]
     public async Task DeleteResourceById_ReturnsOkResult_WithDeletedContact()
     {
         _context.contatos.RemoveRange(_context.contatos);
         await _context.SaveChangesAsync();
 
-        var contato = new ContatosResponse { id = "e8837348-64d2-4602-bf86-8744dce4ec65", nome = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" };
+        var contato = new ContatosResponse { id = new Guid("e8837348-64d2-4602-bf86-8744dce4ec65"), nome = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" };
         _context.contatos.Add(contato);
         await _context.SaveChangesAsync();
 
-        var result = _controller.DeleteResourceById("e8837348-64d2-4602-bf86-8744dce4ec65") as OkObjectResult;
+        var result = _controller.DeleteResourceById(new Guid("e8837348-64d2-4602-bf86-8744dce4ec65")) as OkObjectResult;
         Assert.NotNull(result);
 
         var returnedValue = result.Value as ApiResponse<ContatosResponse>;
@@ -143,13 +164,13 @@ public class ContatosControllerTests
     [Fact]
     public void UpdateResource_ReturnsOkResult_WithUpdatedContact()
     {
-        var contato = new ContatosResponse { id = "e8837348-64d2-4602-bf86-8744dce4ec65", nome = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" };
+        var contato = new ContatosResponse { id = new Guid("e8837348-64d2-4602-bf86-8744dce4ec65"), nome = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" };
         _context.contatos.Add(contato);
         _context.SaveChanges();
 
         var updatedContato = new ContatosUpdateRequest { nome = "Wally", email = "kid.flash@youngJL.com" };
 
-        var result = _controller.UpdateResource("e8837348-64d2-4602-bf86-8744dce4ec65", updatedContato) as OkObjectResult;
+        var result = _controller.UpdateResource(new Guid("e8837348-64d2-4602-bf86-8744dce4ec65"), updatedContato) as OkObjectResult;
         Assert.NotNull(result);
 
         var returnedValue = result.Value as ApiResponse<ContatosResponse>;
@@ -172,7 +193,7 @@ public class ContatosControllerTests
         controller.ModelState.AddModelError("email", "Email em formato inválido.");
         controller.ModelState.AddModelError("telefone", "Telefone é obrigatório.");
 
-        var result = controller.UpdateResource("e8837348-64d2-4602-bf86-8744dce4ec65", invalidContato) as BadRequestObjectResult;
+        var result = controller.UpdateResource(new Guid("e8837348-64d2-4602-bf86-8744dce4ec65"), invalidContato) as BadRequestObjectResult;
 
         Assert.NotNull(result);
         Assert.Equal(400, result.StatusCode);

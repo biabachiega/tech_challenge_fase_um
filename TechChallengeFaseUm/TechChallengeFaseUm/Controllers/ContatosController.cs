@@ -31,7 +31,7 @@ namespace TechChallengeFaseUm.Controllers
             {
                 var novoContato = new ContatosResponse
                 {
-                    id = Guid.NewGuid().ToString(),
+                    id = Guid.NewGuid(),
                     nome = contatos.nome,
                     email = contatos.email,
                     telefone = contatos.telefone
@@ -107,8 +107,32 @@ namespace TechChallengeFaseUm.Controllers
             }
         }
 
+        [HttpGet("getById/{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            try
+            {
+                var contato = _dbContext.contatos.Where(c => c.id == id).FirstOrDefault();
+
+                return Ok(new ApiResponse<ContatosResponse>
+                {
+                    Message = "Contatos filtrados obtidos com sucesso",
+                    HasError = false,
+                    Data = contato
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponse<ContatosResponse>
+                {
+                    Message = $"Erro ao obter contatos filtrados: {ex.Message}",
+                    HasError = true
+                });
+            }
+        }
+
         [HttpDelete("deleteById/{id}")]
-        public IActionResult DeleteResourceById(string id)
+        public IActionResult DeleteResourceById(Guid id)
         {
             try
             {
@@ -145,7 +169,7 @@ namespace TechChallengeFaseUm.Controllers
         }
 
         [HttpPut("updateById/{id}")]
-        public IActionResult UpdateResource(string id, [FromBody] ContatosUpdateRequest updatedResource)
+        public IActionResult UpdateResource(Guid id, [FromBody] ContatosUpdateRequest updatedResource)
         {
             try
             {
