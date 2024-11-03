@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TechChallengeFaseUm.Repositories;
+using TechChallengeFaseUm.Entities;
 
 namespace TestesFaseUm.Tests.Repositories
 {
@@ -15,5 +15,4 @@ namespace TestesFaseUm.Tests.Repositories
         {
         }
     }
-
 }

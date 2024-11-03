@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Polly;
-using System.ComponentModel.DataAnnotations;
 using TechChallengeFaseUm.Entities;
-using TechChallengeFaseUm.Repositories;
 
 namespace TechChallengeFaseUm.Controllers
 {
@@ -33,9 +30,6 @@ namespace TechChallengeFaseUm.Controllers
 
             try
             {
-                var retryPolicy = Policy.Handle<Exception>()
-                                        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-
                 var novoContato = new ContatosResponse
                 {
                     id = Guid.NewGuid().ToString(),
@@ -44,11 +38,8 @@ namespace TechChallengeFaseUm.Controllers
                     telefone = contatos.telefone
                 };
 
-                await retryPolicy.ExecuteAsync(async () =>
-                {
-                    _dbContext.Set<ContatosResponse>().Add(novoContato);
-                    await _dbContext.SaveChangesAsync();
-                });
+                _dbContext.Set<ContatosResponse>().Add(novoContato);
+                await _dbContext.SaveChangesAsync();
 
                 return Ok(new ApiResponse<ContatosResponse>
                 {
@@ -159,7 +150,7 @@ namespace TechChallengeFaseUm.Controllers
         }
 
         [HttpPut("updateById/{id}")]
-        public IActionResult UpdateResource(string id, [FromBody] ContatosRequest updatedResource)
+        public IActionResult UpdateResource(string id, [FromBody] ContatosUpdateRequest updatedResource)
         {
             try
             {
@@ -169,8 +160,7 @@ namespace TechChallengeFaseUm.Controllers
                     return NotFound(new ApiResponse<ContatosResponse>
                     {
                         Message = $"Recurso com ID {id} não encontrado.",
-                        HasError = true,
-                        Data = null
+                        HasError = true
                     });
                 }
 
@@ -197,5 +187,6 @@ namespace TechChallengeFaseUm.Controllers
                 });
             }
         }
+
     }
 }

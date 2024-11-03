@@ -4,9 +4,10 @@ using Xunit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechChallengeFaseUm.Controllers;
-using TechChallengeFaseUm.Repositories;
 using TechChallengeFaseUm.Entities;
 using TestesFaseUm.Tests.Repositories;
+using Moq.EntityFrameworkCore;
+using Moq;
 
 public class ContatosControllerTests
 {
@@ -27,8 +28,8 @@ public class ContatosControllerTests
     {
         var contatosRequest = new ContatosRequest
         {
-            name = "John Doe",
-            email = "john.doe@example.com",
+            name = "Wally West",
+            email = "wally.west@youngJL.com",
             telefone = "(11) 91234-5678"
         };
 
@@ -46,6 +47,33 @@ public class ContatosControllerTests
         Assert.Equal(contatosRequest.email, novoContato.email);
         Assert.Equal(contatosRequest.telefone, novoContato.telefone);
     }
+    [Fact]
+    public async Task CreateContact_ReturnsBadRequest_WhenModelStateIsInvalid()
+    {
+        // Arrange
+        var contatosRequest = new ContatosRequest
+        {
+            name = "", // Nome inválido
+            email = "wally.west@youngJL.com",
+            telefone = "(11) 91234-5678"
+        };
+
+        _controller.ModelState.AddModelError("Name", "Nome é obrigatório.");
+
+        // Act
+        var result = await _controller.CreateContact(contatosRequest) as BadRequestObjectResult;
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(400, result.StatusCode);
+
+        var returnedValue = result.Value as ApiResponse<ContatosResponse>;
+        Assert.NotNull(returnedValue);
+        Assert.Equal("O estado do modelo não é válido", returnedValue.Message);
+        Assert.True(returnedValue.HasError);
+        Assert.Null(returnedValue.Data);
+    }
+
 
     [Fact]
     public async Task GetAll_ReturnsAllContacts()
@@ -55,7 +83,7 @@ public class ContatosControllerTests
 
         var returnedValue = result.Value as ApiResponse<IEnumerable<ContatosResponse>>;
         Assert.NotNull(returnedValue);
-        Assert.Equal("Contatos retrieved successfully", returnedValue.Message);
+        Assert.Equal("Contatos recuperado com sucesso", returnedValue.Message);
         Assert.False(returnedValue.HasError);
 
         var contacts = returnedValue.Data;
@@ -72,8 +100,8 @@ public class ContatosControllerTests
         // Adiciona contatos de teste
         var contatos = new List<ContatosResponse>
         {
-            new ContatosResponse { id = "1", name = "John Doe", email = "john.doe@example.com", telefone = "(11) 91234-5678" },
-            new ContatosResponse { id = "2", name = "Jane Doe", email = "jane.doe@example.com", telefone = "(21) 98765-4321" }
+            new ContatosResponse { id = "e8837348-64d2-4602-bf86-8744dce4ec65", name = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" },
+            new ContatosResponse { id = "b8f105bd-3546-4b05-bc13-ecedce4a3f8e", name = "Artemis Crock", email = "Artemis.crock@example.com", telefone = "(21) 98765-4321" }
         };
 
         _context.contatos.AddRange(contatos);
@@ -86,7 +114,7 @@ public class ContatosControllerTests
         // Assert
         var returnedValue = result.Value as ApiResponse<IEnumerable<ContatosResponse>>;
         Assert.NotNull(returnedValue);
-        Assert.Equal("Filtered contatos retrieved successfully", returnedValue.Message);
+        Assert.Equal("Contatos filtrados recuperados com sucesso", returnedValue.Message);
         Assert.False(returnedValue.HasError);
 
         var filteredContacts = returnedValue.Data;
@@ -102,16 +130,16 @@ public class ContatosControllerTests
         _context.contatos.RemoveRange(_context.contatos);
         await _context.SaveChangesAsync();
 
-        var contato = new ContatosResponse { id = "1", name = "John Doe", email = "john.doe@example.com", telefone = "(11) 91234-5678" };
+        var contato = new ContatosResponse { id = "e8837348-64d2-4602-bf86-8744dce4ec65", name = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" };
         _context.contatos.Add(contato);
         await _context.SaveChangesAsync();
 
-        var result = _controller.DeleteResourceById("1") as OkObjectResult;
+        var result = _controller.DeleteResourceById("e8837348-64d2-4602-bf86-8744dce4ec65") as OkObjectResult;
         Assert.NotNull(result);
 
         var returnedValue = result.Value as ApiResponse<ContatosResponse>;
         Assert.NotNull(returnedValue);
-        Assert.Equal("Contato com ID 1 excluído com sucesso!", returnedValue.Message);
+        Assert.Equal("Contato com ID e8837348-64d2-4602-bf86-8744dce4ec65 excluído com sucesso!", returnedValue.Message);
         Assert.False(returnedValue.HasError);
 
         var deletedContato = returnedValue.Data;
@@ -125,24 +153,48 @@ public class ContatosControllerTests
     [Fact]
     public void UpdateResource_ReturnsOkResult_WithUpdatedContact()
     {
-        var contato = new ContatosResponse { id = "1", name = "John Doe", email = "john.doe@example.com", telefone = "(11) 91234-5678" };
+        var contato = new ContatosResponse { id = "e8837348-64d2-4602-bf86-8744dce4ec65", name = "Wally West", email = "wally.west@youngJL.com", telefone = "(11) 91234-5678" };
         _context.contatos.Add(contato);
         _context.SaveChanges();
 
-        var updatedContato = new ContatosRequest { name = "Johnny Doe", email = "johnny.doe@example.com" };
+        var updatedContato = new ContatosUpdateRequest { name = "Wally", email = "kid.flash@youngJL.com" };
 
-        var result = _controller.UpdateResource("1", updatedContato) as OkObjectResult;
+        var result = _controller.UpdateResource("e8837348-64d2-4602-bf86-8744dce4ec65", updatedContato) as OkObjectResult;
         Assert.NotNull(result);
 
         var returnedValue = result.Value as ApiResponse<ContatosResponse>;
         Assert.NotNull(returnedValue);
-        Assert.Equal("Contato com ID 1 atualizado com sucesso!", returnedValue.Message);
+        Assert.Equal("Contato com ID e8837348-64d2-4602-bf86-8744dce4ec65 atualizado com sucesso!", returnedValue.Message);
         Assert.False(returnedValue.HasError);
 
         var contatoAtualizado = returnedValue.Data;
         Assert.NotNull(contatoAtualizado);
-        Assert.Equal("Johnny Doe", contatoAtualizado.name);
-        Assert.Equal("johnny.doe@example.com", contatoAtualizado.email);
+        Assert.Equal("Wally", contatoAtualizado.name);
+        Assert.Equal("kid.flash@youngJL.com", contatoAtualizado.email);
         Assert.Equal("(11) 91234-5678", contatoAtualizado.telefone); // Telefone não alterado
     }
+    [Fact]
+    public void UpdateResource_ReturnsBadRequest_WhenInvalidRequest()
+    {
+        // Arrange
+        var invalidContato = new ContatosUpdateRequest { name = "", email = "invalid-email", telefone = "" }; // Dados inválidos
+        var controller = new ContatosController(_context);
+        controller.ModelState.AddModelError("name", "Nome é obrigatório.");
+        controller.ModelState.AddModelError("email", "Email em formato inválido.");
+        controller.ModelState.AddModelError("telefone", "Telefone é obrigatório.");
+
+        // Act
+        var result = controller.UpdateResource("e8837348-64d2-4602-bf86-8744dce4ec65", invalidContato) as BadRequestObjectResult;
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(400, result.StatusCode);
+
+        var returnedValue = result.Value as ApiResponse<ContatosResponse>;
+        Assert.NotNull(returnedValue);
+        Assert.True(returnedValue.HasError);
+        Assert.Equal("Dados inválidos fornecidos.", returnedValue.Message);
+    }
+
+
 }
