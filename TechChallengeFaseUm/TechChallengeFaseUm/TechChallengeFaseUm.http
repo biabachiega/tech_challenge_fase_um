@@ -1,6 +1,0 @@
-@TechChallengeFaseUm_HostAddress = http://localhost:5018
-
-GET {{TechChallengeFaseUm_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
